@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { playSendSound, playReceiveSound } from '../utils/sounds';
 
 const CodePlayground = ({ initialHtml = '', initialCss = '', initialJs = '' }) => {
   const [html, setHtml] = useState(initialHtml);
@@ -39,6 +40,7 @@ const CodePlayground = ({ initialHtml = '', initialCss = '', initialJs = '' }) =
 
   const handleAskSprout = async () => {
     if (!chatInput.trim() || isTyping) return;
+    playSendSound();
     const newMessages = [...chatMessages, { role: 'user', text: chatInput }];
     setChatMessages(newMessages);
     setChatInput('');
@@ -54,8 +56,10 @@ const CodePlayground = ({ initialHtml = '', initialCss = '', initialJs = '' }) =
         body: JSON.stringify({ message: chatInput, code: contextCode })
       });
       const data = await res.json();
+      playReceiveSound();
       setChatMessages([...newMessages, { role: 'assistant', text: data.response || "Hmm, my brain feels fuzzy! Try asking again? 🤔" }]);
     } catch(e) {
+      playReceiveSound();
       setChatMessages([...newMessages, { role: 'assistant', text: "Oops! I can't reach my AI brain right now. Make sure the worker is running! 🔌" }]);
     }
     setIsTyping(false);
