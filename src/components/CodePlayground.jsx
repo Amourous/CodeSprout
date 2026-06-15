@@ -47,7 +47,8 @@ const CodePlayground = ({ initialHtml = '', initialCss = '', initialJs = '' }) =
     setIsTyping(true);
 
     const contextCode = `HTML:\n${html}\nCSS:\n${css}\nJS:\n${js}`;
-    const tutorUrl = import.meta.env.VITE_TUTOR_URL || 'http://127.0.0.1:8787';
+    const tutorUrl = import.meta.env.VITE_TUTOR_URL || 
+      (import.meta.env.DEV ? 'http://localhost:8888/.netlify/functions/tutor' : '/.netlify/functions/tutor');
 
     try {
       const res = await fetch(tutorUrl, {
