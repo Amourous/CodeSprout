@@ -32,7 +32,7 @@ IMPORTANT RULES:
 4. Keep the response very short (under 3 sentences).
 The user is currently writing this code:\n${contextCode}`;
 
-      const response = await env.AI.run("@cf/meta/llama-3-8b-instruct", {
+      const response = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage }
@@ -44,7 +44,7 @@ The user is currently writing this code:\n${contextCode}`;
       });
     } catch (e) {
       console.error(e);
-      return new Response(JSON.stringify({ error: "An error occurred processing the AI request." }), { status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: e.message || "An error occurred processing the AI request." }), { status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
     }
   }
 };
