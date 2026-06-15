@@ -24,10 +24,14 @@ export default async (req, context) => {
   try {
     const { message, code } = await req.json();
 
-    // Get Gemini API Key from environment
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: "GEMINI_API_KEY environment variable is not configured on Netlify." }), {
+    // Get Cloudflare credentials from environment variables
+    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+    const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+
+    if (!accountId || !apiToken) {
+      return new Response(JSON.stringify({ 
+        error: "CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN environment variables must be configured on Netlify." 
+      }), {
         status: 500,
         headers: { 
           "Content-Type": "application/json",
@@ -45,39 +49,33 @@ CRITICAL RULES:
 4. Keep the response very short (under 3 sentences).
 The user is currently writing this code:\n${code || ''}`;
 
-    // Call Gemini API (using gemini-1.5-flash as it is fast and efficient)
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-    const response = await fetch(geminiUrl, {
+    // Call Cloudflare Workers AI API directly
+    const model = "@cf/meta/llama-3.1-8b-instruct";
+    const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`;
+    
+    const response = await fetch(cfUrl, {
       method: "POST",
       headers: {
+        "Authorization": `Bearer ${apiToken}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: message }]
-          }
-        ],
-        systemInstruction: {
-          parts: [{ text: systemPrompt }]
-        },
-        generationConfig: {
-          maxOutputTokens: 150,
-          temperature: 0.7
-        }
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: message }
+        ]
       })
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      throw new Error(`Gemini API returned ${response.status}: ${errText}`);
+      throw new Error(`Cloudflare API returned ${response.status}: ${errText}`);
     }
 
     const data = await response.json();
     
-    // Extract candidate text from Gemini response structure
-    const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Hmm, my brain feels fuzzy! Try asking again? 🤔";
+    // Extract response content from Cloudflare's response structure
+    const candidateText = data.result?.response || "Hmm, my brain feels fuzzy! Try asking again? 🤔";
 
     return new Response(JSON.stringify({ response: candidateText.trim() }), {
       status: 200,
